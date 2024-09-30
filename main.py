@@ -1,20 +1,58 @@
-from queue import Queue
+import queue
+import time
+import threading
 import random
 
-queue = Queue()
+# Клас для заявки
+class Request:
+    def __init__(self, request_id, description):
+        self.request_id = request_id
+        self.description = description
+    
+    def __str__(self):
+        return f"Заявка {self.request_id}: {self.description}"
 
-def generate_request():
-    request = random.randint(0, 10000)
-    queue.put(request)
+# Функція для автоматичної генерації заявок
+def generate_request(queue, request_id_counter):
+    while True:
+        # Створюємо нову заявку з унікальним ідентифікатором
+        description = f"Опис заявки {request_id_counter}"
+        new_request = Request(request_id_counter, description)
+        queue.put(new_request)
+        print(f"[Нова заявка] {new_request}")
+        ç += 1
+        
+        # Затримка між генерацією нових заявок (імітація часу)
+        time.sleep(random.uniform(1, 3))
 
-def process_request():
-    while not queue.empty():
+# Функція для обробки заявок
+def process_request(queue):
+    while True:
+        # Чекаємо поки з'явиться заявка для обробки
         request = queue.get()
-        print(f'Request {request} is processing...') 
-    else:
-        print('The queue is empty')
+        print(f"[Обробка] {request}")
+        
+        # Імітуємо час на обробку
+        time.sleep(random.uniform(2, 5))
+        
+        # Позначаємо, що обробка заявки завершена
+        queue.task_done()
+        print(f"[Завершено] {request}")
 
-if __name__ == '__main__':
-    for i in range(10):
-        generate_request()
-    process_request()
+if __name__ == "__main__":
+    # Створюємо чергу для зберігання заявок
+    request_queue = queue.Queue()
+    request_id_counter = 1
+
+    # Запускаємо поток для генерації заявок
+    generator_thread = threading.Thread(target=generate_request, args=(request_queue, request_id_counter))
+    generator_thread.daemon = True
+    generator_thread.start()
+
+    # Запускаємо поток для обробки заявок
+    processor_thread = threading.Thread(target=process_request, args=(request_queue,))
+    processor_thread.daemon = True
+    processor_thread.start()
+
+    # Чекаємо завершення обробки всіх заявок (можна використовувати для завершення програми)
+    request_queue.join()
